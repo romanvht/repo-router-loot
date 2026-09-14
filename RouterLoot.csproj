@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <AssemblyName>RouterLoot</AssemblyName>
+    <Version>0.1.0</Version>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GameDir Condition="'$(GameDir)' == ''">D:\SteamLibrary\steamapps\common\REPO</GameDir>
+    <RestorePackagesPath>$(MSBuildProjectDirectory)\.deps\packages</RestorePackagesPath>
+  </PropertyGroup>
+  <Import Project="local.props" Condition="Exists('local.props')" />
+  <PropertyGroup>
+    <ManagedDir>$(GameDir)\REPO_Data\Managed</ManagedDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="src/**/*.cs" />
+    <Reference Include="BepInEx">
+      <HintPath>.deps/BepInEx.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>.deps/0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="REPOLib">
+      <HintPath>.deps/REPOLib.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="$(ManagedDir)\*.dll" Exclude="$(ManagedDir)\System*.dll;$(ManagedDir)\mscorlib.dll;$(ManagedDir)\netstandard.dll">
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+  <Target Name="ImportModels" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <GeneratedAssets>$(MSBuildProjectDirectory)/obj/$(Configuration)/runtime-assets</GeneratedAssets>
+    </PropertyGroup>
+    <Exec Command="dotnet run --project &quot;$(MSBuildProjectDirectory)/asset-tool/AssetTool.csproj&quot; --configuration $(Configuration) --no-launch-profile -- &quot;$(MSBuildProjectDirectory)/assets&quot; &quot;$(GeneratedAssets)&quot;" />
+    <ItemGroup>
+      <GeneratedModel Include="$(GeneratedAssets)/models/*.mesh.gz" />
+      <EmbeddedResource Include="@(GeneratedModel)">
+        <LogicalName>RouterLoot.Models.%(GeneratedModel.Filename)%(GeneratedModel.Extension)</LogicalName>
+      </EmbeddedResource>
+      <EmbeddedResource Include="$(GeneratedAssets)/catalog.json">
+        <LogicalName>RouterLoot.Catalog.json</LogicalName>
+      </EmbeddedResource>
+    </ItemGroup>
+  </Target>
+</Project>
