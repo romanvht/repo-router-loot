@@ -66,6 +66,7 @@ public static class GlbImporter
                 Require(channel?.Texture == null || uv != null, "A textured primitive has no matching UV coordinates");
 
                 var part = new RuntimePart { name = node.Name ?? node.Mesh.Name ?? result.id, material = mi };
+                var vertexMap = normals == null ? null : Enumerable.Repeat(-1, positions.Count).ToArray();
 
                 foreach (var (a, b, c) in primitive.GetTriangleIndices())
                 {
@@ -82,6 +83,12 @@ public static class GlbImporter
 
                     for (int j = 0; j < 3; j++)
                     {
+                        if (vertexMap != null && vertexMap[indices[j]] >= 0)
+                        {
+                            part.triangles.Add(vertexMap[indices[j]]);
+                            continue;
+                        }
+
                         var normal = normals == null ? flatNormal : Vector3.Normalize(Vector3.TransformNormal(normals[indices[j]], normalTransform));
                         var tex = uv == null ? Vector2.Zero : uv[indices[j]];
 
@@ -90,24 +97,32 @@ public static class GlbImporter
                             tex = Vector2.Transform(tex, uvTransform.Matrix);
                         }
 
+                        int vertex = part.positions.Count / 3;
+
                         part.uv.AddRange([tex.X, 1 - tex.Y]);
                         part.positions.AddRange([points[j].X, points[j].Y, points[j].Z]);
                         part.normals.AddRange([normal.X, normal.Y, normal.Z]);
-                        part.triangles.Add(part.triangles.Count);
+                        part.triangles.Add(vertex);
+
+                        if (vertexMap != null)
+                        {
+                            vertexMap[indices[j]] = vertex;
+                        }
                     }
                 }
 
                 if (mat?.DoubleSided == true)
                 {
                     int count = part.positions.Count / 3;
+                    int indexCount = part.triangles.Count;
 
                     part.positions.AddRange(part.positions.ToArray());
                     part.uv.AddRange(part.uv.ToArray());
                     part.normals.AddRange(part.normals.Select(x => -x).ToArray());
 
-                    for (int i = 0; i < count; i += 3)
+                    for (int i = 0; i < indexCount; i += 3)
                     {
-                        part.triangles.AddRange([count + i, count + i + 2, count + i + 1]);
+                        part.triangles.AddRange([count + part.triangles[i], count + part.triangles[i + 2], count + part.triangles[i + 1]]);
                     }
                 }
 
