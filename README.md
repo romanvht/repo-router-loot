@@ -1,6 +1,8 @@
-# RouterLoot
+# Router Loot
 
 Мод для R.E.P.O., который добавляет роутеры в список ценных предметов.
+
+[https://thunderstore.io/c/repo/p/romanvht/RouterLoot/](https://thunderstore.io/c/repo/p/romanvht/RouterLoot/)
 
 ## Установка
 
