@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace RouterLoot;
 
-[BepInPlugin(Id, "Router Loot", "0.1.0")]
+[BepInPlugin(Id, "Router Loot", "0.1.3")]
 [BepInDependency("REPOLib", "4.2.0")]
 public sealed class Plugin : BaseUnityPlugin
 {
