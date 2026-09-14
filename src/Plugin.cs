@@ -15,18 +15,14 @@ namespace RouterLoot;
 public sealed class Plugin : BaseUnityPlugin
 {
     public const string Id = "romanvht.RouterLoot";
-
     internal static Plugin Instance = null!;
 
     internal readonly List<PrefabRef> Registered = new();
-
     private readonly Dictionary<string, Settings> settings = new();
 
     private ConfigEntry<bool> debugSpawn = null!;
-
     private bool initialized;
 
-    /// <summary>Loads router settings and installs the registration hook.</summary>
     private void Awake()
     {
         Instance = this;
@@ -35,14 +31,13 @@ public sealed class Plugin : BaseUnityPlugin
 
         foreach (var spec in Catalog.All)
         {
-            settings.Add(spec.Id, new Settings(Config, spec));
+            settings.Add(spec.id, new Settings(Config, spec));
         }
 
         new Harmony(Id).PatchAll(typeof(Plugin).Assembly);
         Logger.LogInfo("Router Loot loaded. Models are embedded; Unity Editor is not required.");
     }
 
-    /// <summary>Builds and registers every catalog model once.</summary>
     internal void Initialize()
     {
         if (initialized)
@@ -67,7 +62,7 @@ public sealed class Plugin : BaseUnityPlugin
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogError($"Cannot register {spec.Id}: {ex}");
+                    Logger.LogError($"Cannot register {spec.id}: {ex}");
                 }
             }
 
@@ -79,31 +74,28 @@ public sealed class Plugin : BaseUnityPlugin
         }
     }
 
-    /// <summary>Creates one router with its model, colliders and value settings.</summary>
     private void RegisterRouter(RouterSpec spec, GameObject donor, Transform storage,
         BoxCollider collider, Material template)
     {
-        var model = ModelData.Load(spec.Id);
+        var model = ModelData.Load(spec.id);
         using var prefab = new ValuablePrefab(donor, storage, spec.PrefabName);
 
         model.Attach(prefab, template);
 
-        foreach (var box in spec.Colliders)
+        foreach (var box in spec.colliders)
         {
             StockCollider.Attach(collider, prefab.Root.transform, "Router Collider",
-                box.Center, box.Size, Quaternion.Euler(box.Rotation));
+                box.Center, box.Size, Quaternion.identity);
         }
 
-        var config = settings[spec.Id];
+        var config = settings[spec.id];
 
         prefab.Configure(config.Min.Value, config.Max.Value, config.Mass.Value,
-            config.Fragility.Value, spec.Colliders[0].Center);
-        prefab.Root.AddComponent<RouterMarker>().ModelId = spec.Id;
+            config.Fragility.Value, spec.colliders[0].Center);
         Registered.Add(prefab.Register());
-        Logger.LogInfo($"Registered {prefab.Root.name}: {model.parts.Sum(p => p.triangles.Length / 3)} triangles, {spec.Colliders.Length} colliders.");
+        Logger.LogInfo($"Registered {prefab.Root.name}: {model.parts.Sum(p => p.triangles.Length / 3)} triangles, {spec.colliders.Length} colliders.");
     }
 
-    /// <summary>Spawns the router set when the host presses F8.</summary>
     private void Update()
     {
         if (!DebugSpawn.TryGetCamera(debugSpawn.Value, KeyCode.F8, Registered.Count, out var camera))
@@ -121,15 +113,9 @@ public sealed class Plugin : BaseUnityPlugin
     }
 }
 
-public sealed class RouterMarker : MonoBehaviour
-{
-    public string ModelId = "";
-}
-
 [HarmonyPatch(typeof(RunManager), "Awake")]
 internal static class RunManagerPatch
 {
-    /// <summary>Registers routers after REPOLib is ready.</summary>
     [HarmonyPostfix, HarmonyAfter("REPOLib")]
     private static void Postfix() => Plugin.Instance.Initialize();
 }

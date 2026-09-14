@@ -6,7 +6,6 @@ namespace RouterLoot.Assets;
 
 public static class GlbImporter
 {
-    /// <summary>Imports embedded GLB geometry and textures, converts coordinates and normalizes model bounds.</summary>
     public static RuntimeModel Load(string path, float width = .42f)
     {
         Require(float.IsFinite(width) && width > 0 && width <= 2, "width must be between 0 and 2 metres");
@@ -153,10 +152,8 @@ public static class GlbImporter
         return result;
     }
 
-    /// <summary>Checks that all three vector components are finite.</summary>
     static bool Finite(Vector3 p) => float.IsFinite(p.X) && float.IsFinite(p.Y) && float.IsFinite(p.Z);
 
-    /// <summary>Reads base color textures and supported material factors.</summary>
     static RuntimeMaterial ReadMaterial(Material? material)
     {
         if (material == null)

@@ -9,7 +9,6 @@ namespace RouterLoot.Assets;
 
 public static class ImportPipeline
 {
-    /// <summary>Validates every GLB, preserves catalog settings and writes generated runtime assets.</summary>
     public static void Prepare(string assets, string output)
     {
         assets = Path.GetFullPath(assets);
@@ -129,7 +128,6 @@ public static class ImportPipeline
         }
     }
 
-    /// <summary>Serializes a runtime model into compressed JSON.</summary>
     static byte[] Compress(RuntimeModel model)
     {
         using var bytes = new MemoryStream();
@@ -142,7 +140,6 @@ public static class ImportPipeline
         return bytes.ToArray();
     }
 
-    /// <summary>Replaces one generated file only when its contents change.</summary>
     static void WriteIfChanged(string path, byte[] content)
     {
         if (File.Exists(path) && File.ReadAllBytes(path).AsSpan().SequenceEqual(content))
@@ -166,7 +163,6 @@ public static class ImportPipeline
         }
     }
 
-    /// <summary>Checks gameplay settings and verifies collider coverage in normalized model coordinates.</summary>
     static void ValidateSpec(JsonObject spec, RuntimeModel model)
     {
         Require(!string.IsNullOrWhiteSpace(spec["name"]?.GetValue<string>()), "Name is empty");

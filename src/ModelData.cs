@@ -14,16 +14,11 @@ namespace RouterLoot;
 internal sealed class ModelData
 {
     public int version = 0;
-
     public string id = "";
-
     public float[] size = Array.Empty<float>();
-
     public MaterialData[] materials = Array.Empty<MaterialData>();
-
     public MeshData[] parts = Array.Empty<MeshData>();
 
-    /// <summary>Loads and validates an embedded compressed model.</summary>
     public static ModelData Load(string id)
     {
         using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream($"RouterLoot.Models.{id}.mesh.gz")
@@ -50,10 +45,8 @@ internal sealed class ModelData
         return data;
     }
 
-    /// <summary>Checks that a serialized coordinate is finite.</summary>
     internal static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
 
-    /// <summary>Attaches every model part and tracks its allocated resources.</summary>
     public void Attach(ValuablePrefab prefab, Material template)
     {
         var createdMaterials = new Material[materials.Length];
@@ -88,7 +81,6 @@ internal sealed class ModelData
         }
     }
 
-    /// <summary>Converts packed coordinates to three-dimensional vectors.</summary>
     internal static Vector3[] Triples(float[] values)
     {
         var result = new Vector3[values.Length / 3];
@@ -101,7 +93,6 @@ internal sealed class ModelData
         return result;
     }
 
-    /// <summary>Converts packed texture coordinates to two-dimensional vectors.</summary>
     private static Vector2[] Pairs(float[] values)
     {
         var result = new Vector2[values.Length / 2];
@@ -119,18 +110,12 @@ internal sealed class ModelData
 internal sealed class MeshData
 {
     public string name = "";
-
     public int material = 0;
-
     public float[] positions = Array.Empty<float>();
-
     public float[] normals = Array.Empty<float>();
-
     public float[] uv = Array.Empty<float>();
-
     public int[] triangles = Array.Empty<int>();
 
-    /// <summary>Validates mesh arrays and material references before allocation.</summary>
     public void Validate(int materialCount)
     {
         int count = positions.Length / 3;

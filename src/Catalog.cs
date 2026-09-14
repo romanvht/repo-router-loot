@@ -11,7 +11,6 @@ internal static class Catalog
 {
     public static readonly RouterSpec[] All = Read();
 
-    /// <summary>Loads the catalog and checks that it matches the embedded model set.</summary>
     private static RouterSpec[] Read()
     {
         using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("RouterLoot.Catalog.json")
@@ -50,40 +49,21 @@ internal sealed class CatalogData
 internal sealed class RouterSpec
 {
     public string id = "";
-
     public string name = "";
-
     public float min = 0;
-
     public float max = 0;
-
     public float mass = 0;
-
     public ColliderSpec[] colliders = Array.Empty<ColliderSpec>();
 
-    public string Id => id;
-
     public string PrefabName => "RouterLoot " + name;
-
-    public float Min => min;
-
-    public float Max => max;
-
-    public float Mass => mass;
-
-    public ColliderSpec[] Colliders => colliders;
 }
 
 [Serializable]
 internal sealed class ColliderSpec
 {
     public float[] center = Array.Empty<float>();
-
     public float[] size = Array.Empty<float>();
 
     public Vector3 Center => new(center[0], center[1], center[2]);
-
     public Vector3 Size => new(size[0], size[1], size[2]);
-
-    public Vector3 Rotation => Vector3.zero;
 }

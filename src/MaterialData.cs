@@ -11,16 +11,11 @@ namespace RouterLoot;
 internal sealed class MaterialData
 {
     public string name = "";
-
     public string texture = "";
-
     public float[] color = { 1f, 1f, 1f, 1f };
-
     public float metallic = 0;
-
     public float roughness = 0.7f;
 
-    /// <summary>Creates a model material and decodes its optional embedded texture.</summary>
     public Material Create(Material template)
     {
         if (color.Length != 4 || color.Any(x => !ModelData.Finite(x)))
