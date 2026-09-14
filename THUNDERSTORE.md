@@ -1,7 +1,6 @@
 # RouterLoot
 
 Добавляет в R.E.P.O. пять роутеров, которые можно находить на уровнях и сдавать как ценные предметы.
-У каждой модели свои стоимость, масса и форма.
 
 ![Роутеры RouterLoot в игре](https://raw.githubusercontent.com/romanvht/repo-router-loot/HEAD/screenshots/screen-1.png)
 
