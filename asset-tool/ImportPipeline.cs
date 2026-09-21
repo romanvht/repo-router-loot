@@ -1,5 +1,4 @@
 using System.IO.Compression;
-using System.Numerics;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
@@ -67,20 +66,10 @@ public static class ImportPipeline
                     ["min"] = 500,
                     ["max"] = 1000,
                     ["mass"] = 1,
-                    ["width"] = width,
-                    ["autoColliders"] = true
+                    ["width"] = width
                 };
 
-                if (spec["autoColliders"]?.GetValue<bool>() == true)
-                {
-                    spec["colliders"] = JsonSerializer.SerializeToNode(new[] { new
-                    {
-                        center = new[] { 0f, model.size[1] / 2, 0f },
-                        size = model.size.Select(x => Math.Max(x, .014f)).ToArray()
-                    }});
-                }
-
-                ValidateSpec(spec, model);
+                ValidateSpec(spec);
                 models.Add(id, model);
                 entries.Add(id, spec);
                 Console.WriteLine($"READY {id}: {model.parts.Sum(p => p.triangles.Count / 3)} triangles, width {model.size[0]:0.###} m");
@@ -163,7 +152,7 @@ public static class ImportPipeline
         }
     }
 
-    static void ValidateSpec(JsonObject spec, RuntimeModel model)
+    static void ValidateSpec(JsonObject spec)
     {
         Require(!string.IsNullOrWhiteSpace(spec["name"]?.GetValue<string>()), "Name is empty");
 
@@ -173,15 +162,5 @@ public static class ImportPipeline
 
         Require(float.IsFinite(min) && float.IsFinite(max) && float.IsFinite(mass)
             && min >= 1 && min <= max && max <= 100000 && mass >= .1f && mass <= 30, "Invalid price/mass");
-
-        var boxes = spec["colliders"]?.AsArray().Select(b =>
-            (center: b!["center"]!.Deserialize<float[]>()!, size: b["size"]!.Deserialize<float[]>()!)).ToArray();
-
-        Require(boxes != null && boxes.Length > 0, "Colliders missing; set autoColliders to true for an automatic box");
-        Require(boxes.All(b => b.center.Length == 3 && b.size.Length == 3 && b.center.All(float.IsFinite)
-            && b.size.All(x => float.IsFinite(x) && x > 0)), "Invalid collider coordinates");
-        Require(model.Points.All(p => boxes.Any(b => Math.Abs(p.X - b.center[0]) <= b.size[0] / 2 + .015
-            && Math.Abs(p.Y - b.center[1]) <= b.size[1] / 2 + .015 && Math.Abs(p.Z - b.center[2]) <= b.size[2] / 2 + .015)),
-            "Custom colliders no longer cover the model; adjust them or set autoColliders to true");
     }
 }

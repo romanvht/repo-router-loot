@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -26,7 +27,7 @@ static class AssetChecks
         return values;
     }
 
-    static void Check(string assets)
+    internal static void Check(string assets)
     {
         using var catalog = JsonDocument.Parse(File.ReadAllText(Path.Combine(assets, "catalog.json")));
         var specs = catalog.RootElement.GetProperty("routers").EnumerateArray().ToArray();
@@ -60,17 +61,17 @@ static class AssetChecks
                 Require(double.IsFinite(min) && double.IsFinite(max) && double.IsFinite(mass)
                     && min >= 1 && min <= max && max <= 100000 && mass >= .1 && mass <= 30, "Invalid price or mass");
 
-                var boxes = spec.GetProperty("colliders").EnumerateArray()
-                    .Select(b => (Center: Numbers(b, "center", 3), Size: Numbers(b, "size", 3))).ToArray();
-
-                Require(boxes.Length > 0 && boxes.All(b => b.Size.All(x => x > 0)), "Invalid colliders");
-
                 using var file = File.OpenRead(Path.Combine(assets, "models", id + ".mesh.gz"));
                 using var gzip = new GZipStream(file, CompressionMode.Decompress);
                 using var model = JsonDocument.Parse(gzip);
                 var data = model.RootElement;
 
-                Require(data.GetProperty("version").GetInt32() == 1 && data.GetProperty("id").GetString() == id, "Invalid model header");
+                Require(data.GetProperty("version").GetInt32() == 2 && data.GetProperty("id").GetString() == id, "Invalid model header");
+
+                var boxes = data.GetProperty("colliders").EnumerateArray()
+                    .Select(b => (Center: Numbers(b, "center", 3), Size: Numbers(b, "size", 3), Rotation: Numbers(b, "rotation", 4))).ToArray();
+                Require(boxes.Length > 0 && boxes.All(b => b.Size.All(x => x > 0)), "Invalid colliders");
+                Require(boxes.All(b => Math.Abs(b.Rotation.Sum(x => x * x) - 1) < 1e-4), "Invalid collider rotations");
 
                 var size = Numbers(data, "size", 3);
 
@@ -110,8 +111,15 @@ static class AssetChecks
                             hi[axis] = Math.Max(hi[axis], positions[v + axis]);
                         }
 
-                        Require(boxes.Any(b => Enumerable.Range(0, 3).All(axis =>
-                            Math.Abs(positions[v + axis] - b.Center[axis]) <= b.Size[axis] / 2 + .015)), "Colliders do not cover the model");
+                        Require(boxes.Any(b =>
+                        {
+                            var delta = new Vector3((float)(positions[v] - b.Center[0]),
+                                (float)(positions[v + 1] - b.Center[1]), (float)(positions[v + 2] - b.Center[2]));
+                            var q = new Quaternion((float)b.Rotation[0], (float)b.Rotation[1], (float)b.Rotation[2], (float)b.Rotation[3]);
+                            var local = Vector3.Transform(delta, Quaternion.Inverse(q));
+                            return Math.Abs(local.X) <= b.Size[0] / 2 + .015
+                                && Math.Abs(local.Y) <= b.Size[1] / 2 + .015 && Math.Abs(local.Z) <= b.Size[2] / 2 + .015;
+                        }), "Colliders do not cover the model");
                     }
                 }
 
@@ -158,6 +166,7 @@ static class AssetChecks
                 Require(File.ReadAllText(Path.Combine(assets, "catalog.json")) == original, "Existing catalog settings changed");
                 Check(output);
                 PipelineChecks.Run(assets, output);
+                ColliderChecks.Run(assets, output);
             }
             finally
             {

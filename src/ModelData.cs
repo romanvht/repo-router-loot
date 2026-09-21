@@ -18,6 +18,7 @@ internal sealed class ModelData
     public float[] size = Array.Empty<float>();
     public MaterialData[] materials = Array.Empty<MaterialData>();
     public MeshData[] parts = Array.Empty<MeshData>();
+    public ColliderData[] colliders = Array.Empty<ColliderData>();
 
     public static ModelData Load(string id)
     {
@@ -27,7 +28,8 @@ internal sealed class ModelData
         using var reader = new StreamReader(gzip);
         var data = JsonConvert.DeserializeObject<ModelData>(reader.ReadToEnd());
 
-        if (data == null || data.version != 1 || data.id != id || data.parts.Length == 0 || data.materials.Length == 0)
+        if (data == null || data.version != 2 || data.id != id || data.parts.Length == 0
+            || data.materials.Length == 0 || data.colliders.Length == 0)
         {
             throw new InvalidDataException($"Invalid mesh header: {id}");
         }
@@ -40,6 +42,11 @@ internal sealed class ModelData
         foreach (var part in data.parts)
         {
             part.Validate(data.materials.Length);
+        }
+
+        foreach (var box in data.colliders)
+        {
+            box.Validate();
         }
 
         return data;
@@ -103,6 +110,28 @@ internal sealed class ModelData
         }
 
         return result;
+    }
+}
+
+[Serializable]
+internal sealed class ColliderData
+{
+    public float[] center = Array.Empty<float>();
+    public float[] size = Array.Empty<float>();
+    public float[] rotation = Array.Empty<float>();
+
+    public Vector3 Center => new(center[0], center[1], center[2]);
+    public Vector3 Size => new(size[0], size[1], size[2]);
+    public Quaternion Rotation => new(rotation[0], rotation[1], rotation[2], rotation[3]);
+
+    public void Validate()
+    {
+        if (center.Length != 3 || size.Length != 3 || rotation.Length != 4
+            || center.Any(x => !ModelData.Finite(x)) || size.Any(x => !ModelData.Finite(x) || x <= 0)
+            || rotation.Any(x => !ModelData.Finite(x)) || Math.Abs(rotation.Sum(x => x * x) - 1) > 1e-4f)
+        {
+            throw new InvalidDataException("Invalid model collider");
+        }
     }
 }
 

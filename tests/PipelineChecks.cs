@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -46,7 +47,7 @@ static class PipelineChecks
         var catalog = JsonNode.Parse(File.ReadAllText(catalogPath))!;
         var entry = catalog["routers"]!.AsArray().Single(s => s!["id"]!.GetValue<string>() == id)!;
 
-        Require(entry["autoColliders"]!.GetValue<bool>() && entry["colliders"]!.AsArray().Count == 1, "New model was not configured automatically");
+        Require(ReadModel(output, id).colliders.Count == 1, "New model was not configured automatically");
         entry["name"] = "Custom Router";
         entry["min"] = 750;
         entry["width"] = .3f;
@@ -55,7 +56,7 @@ static class PipelineChecks
         catalog = JsonNode.Parse(File.ReadAllText(catalogPath))!;
         entry = catalog["routers"]!.AsArray().Single(s => s!["id"]!.GetValue<string>() == id)!;
         Require(entry["name"]!.GetValue<string>() == "Custom Router" && entry["min"]!.GetValue<int>() == 750, "Custom settings were lost");
-        Require(Math.Abs(entry["colliders"]![0]!["size"]![0]!.GetValue<float>() - .3f) < 1e-6, "Automatic collider did not follow width");
+        Require(Math.Abs(ReadModel(output, id).colliders[0].size[0] - .3f) < 1e-6, "Automatic collider did not follow width");
 
         string before = File.ReadAllText(catalogPath);
         string generated = Snapshot(output);
@@ -85,6 +86,13 @@ static class PipelineChecks
         catalog = JsonNode.Parse(File.ReadAllText(catalogPath))!;
         Require(!catalog["routers"]!.AsArray().Any(s => s!["id"]!.GetValue<string>() == id), "Deleted model remains in catalog");
         Console.WriteLine("PASS: GLB transforms, UVs, materials, add/edit/delete and failed-import preservation");
+    }
+
+    internal static RuntimeModel ReadModel(string output, string id)
+    {
+        using var file = File.OpenRead(Path.Combine(output, "models", id + ".mesh.gz"));
+        using var gzip = new GZipStream(file, CompressionMode.Decompress);
+        return JsonSerializer.Deserialize<RuntimeModel>(gzip)!;
     }
 
     static byte[] Fixture(bool external = false)
@@ -127,6 +135,11 @@ static class PipelineChecks
             json["buffers"]![0]!["uri"] = "missing-external-buffer.bin";
         }
 
+        return PackGlb(json, bin.ToArray());
+    }
+
+    internal static byte[] PackGlb(JsonNode json, byte[] binary)
+    {
         var bytes = Encoding.UTF8.GetBytes(json.ToJsonString());
         int padded = (bytes.Length + 3) & ~3;
         using var glb = new MemoryStream();
@@ -135,7 +148,7 @@ static class PipelineChecks
         {
             writer.Write(0x46546C67);
             writer.Write(2);
-            writer.Write(12 + 8 + padded + 8 + (int)bin.Length);
+            writer.Write(12 + 8 + padded + 8 + binary.Length);
             writer.Write(padded);
             writer.Write(0x4E4F534A);
             writer.Write(bytes);
@@ -145,9 +158,9 @@ static class PipelineChecks
                 writer.Write((byte)' ');
             }
 
-            writer.Write((int)bin.Length);
+            writer.Write(binary.Length);
             writer.Write(0x004E4942);
-            writer.Write(bin.ToArray());
+            writer.Write(binary);
         }
 
         return glb.ToArray();

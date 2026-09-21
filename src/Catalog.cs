@@ -3,7 +3,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Newtonsoft.Json;
-using UnityEngine;
 
 namespace RouterLoot;
 
@@ -53,17 +52,6 @@ internal sealed class RouterSpec
     public float min = 0;
     public float max = 0;
     public float mass = 0;
-    public ColliderSpec[] colliders = Array.Empty<ColliderSpec>();
 
     public string PrefabName => "RouterLoot " + name;
-}
-
-[Serializable]
-internal sealed class ColliderSpec
-{
-    public float[] center = Array.Empty<float>();
-    public float[] size = Array.Empty<float>();
-
-    public Vector3 Center => new(center[0], center[1], center[2]);
-    public Vector3 Size => new(size[0], size[1], size[2]);
 }

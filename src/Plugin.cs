@@ -82,18 +82,19 @@ public sealed class Plugin : BaseUnityPlugin
 
         model.Attach(prefab, template);
 
-        foreach (var box in spec.colliders)
+        foreach (var box in model.colliders)
         {
             StockCollider.Attach(collider, prefab.Root.transform, "Router Collider",
-                box.Center, box.Size, Quaternion.identity);
+                box.Center, box.Size, box.Rotation);
         }
 
         var config = settings[spec.id];
+        var body = model.colliders.OrderByDescending(box => box.size[0] * box.size[1] * box.size[2]).First();
 
         prefab.Configure(config.Min.Value, config.Max.Value, config.Mass.Value,
-            config.Fragility.Value, spec.colliders[0].Center);
+            config.Fragility.Value, body.Center);
         Registered.Add(prefab.Register());
-        Logger.LogInfo($"Registered {prefab.Root.name}: {model.parts.Sum(p => p.triangles.Length / 3)} triangles, {spec.colliders.Length} colliders.");
+        Logger.LogInfo($"Registered {prefab.Root.name}: {model.parts.Sum(p => p.triangles.Length / 3)} triangles, {model.colliders.Length} colliders.");
     }
 
     private void Update()

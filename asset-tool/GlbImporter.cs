@@ -29,6 +29,12 @@ public static class GlbImporter
 
         foreach (var node in Node.Flatten(scene!))
         {
+            if (node.Name?.StartsWith("COL_", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                result.colliders.Add(ReadCollider(node));
+                continue;
+            }
+
             if (node.Mesh == null)
             {
                 continue;
@@ -161,13 +167,88 @@ public static class GlbImporter
 
         var size = (hi - lo) * scale;
 
+        foreach (var box in result.colliders)
+        {
+            var center = (new Vector3(box.center[0], box.center[1], box.center[2]) - origin) * scale;
+            box.center = [center.X, center.Y, center.Z];
+            box.size = box.size.Select(x => x * scale).ToArray();
+        }
+
         result.size = [size.X, size.Y, size.Z];
         Require(result.size.All(x => float.IsFinite(x) && x > 0 && x <= 2), "Model must have nonzero dimensions no greater than 2 metres; adjust catalog width");
+
+        if (result.colliders.Count == 0)
+        {
+            result.colliders.Add(new ImportedCollider
+            {
+                center = [0, size.Y / 2, 0],
+                size = result.size.Select(x => Math.Max(x, .014f)).ToArray()
+            });
+        }
+
+        ValidateColliders(result);
 
         return result;
     }
 
     static bool Finite(Vector3 p) => float.IsFinite(p.X) && float.IsFinite(p.Y) && float.IsFinite(p.Z);
+
+    static ImportedCollider ReadCollider(Node node)
+    {
+        string label = $"Collider '{node.Name}': ";
+        Require(node.Mesh != null && !node.VisualChildren.Any(), label + "use a mesh object without children, not an empty/group");
+        Require(node.Mesh.Primitives.All(p => p.MorphTargetsCount == 0), label + "apply morph targets before exporting");
+        var points = node.Mesh.Primitives.SelectMany(p => p.GetVertexAccessor("POSITION").AsVector3Array()).ToArray();
+        Require(points.Length > 0 && points.All(Finite), label + "empty mesh or non-finite coordinates");
+        var lo = points.Aggregate(Vector3.Min);
+        var hi = points.Aggregate(Vector3.Max);
+        var extent = hi - lo;
+        Require(extent.X > 0 && extent.Y > 0 && extent.Z > 0, label + "box must have nonzero dimensions on every axis");
+
+        var transform = node.WorldMatrix * Matrix4x4.CreateScale(1, 1, -1);
+        var x = Vector3.TransformNormal(Vector3.UnitX, transform);
+        var y = Vector3.TransformNormal(Vector3.UnitY, transform);
+        var z = Vector3.TransformNormal(Vector3.UnitZ, transform);
+        var lengths = new Vector3(x.Length(), y.Length(), z.Length());
+        Require(Finite(lengths) && lengths.X > 0 && lengths.Y > 0 && lengths.Z > 0, label + "invalid or zero scale");
+        x /= lengths.X;
+        y /= lengths.Y;
+        z /= lengths.Z;
+        Require(Math.Abs(Vector3.Dot(x, y)) < 1e-4f && Math.Abs(Vector3.Dot(x, z)) < 1e-4f
+            && Math.Abs(Vector3.Dot(y, z)) < 1e-4f,
+            label + "sheared transform cannot form a box; remove parent shear before exporting");
+        if (Vector3.Dot(Vector3.Cross(x, y), z) < 0)
+        {
+            z = -z;
+        }
+
+        var rotation = Quaternion.Normalize(Quaternion.CreateFromRotationMatrix(new Matrix4x4(
+            x.X, x.Y, x.Z, 0, y.X, y.Y, y.Z, 0, z.X, z.Y, z.Z, 0, 0, 0, 0, 1)));
+        var center = Vector3.Transform((lo + hi) / 2, transform);
+        var size = extent * lengths;
+        Require(Finite(center) && Finite(size), label + "non-finite bounds");
+        return new ImportedCollider
+        {
+            center = [center.X, center.Y, center.Z],
+            size = [size.X, size.Y, size.Z],
+            rotation = [rotation.X, rotation.Y, rotation.Z, rotation.W]
+        };
+    }
+
+    static void ValidateColliders(RuntimeModel model)
+    {
+        Require(model.colliders.All(b => b.center.All(float.IsFinite) && b.size.All(x => float.IsFinite(x) && x > 0)
+            && b.rotation.All(float.IsFinite)), "Invalid collider bounds or rotation");
+        var boxes = model.colliders.Select(b => (
+            center: new Vector3(b.center[0], b.center[1], b.center[2]),
+            half: new Vector3(b.size[0], b.size[1], b.size[2]) / 2 + new Vector3(.015f),
+            inverse: Quaternion.Inverse(new Quaternion(b.rotation[0], b.rotation[1], b.rotation[2], b.rotation[3])))).ToArray();
+        Require(model.Points.All(p => boxes.Any(b =>
+        {
+            var local = Vector3.Abs(Vector3.Transform(p - b.center, b.inverse));
+            return local.X <= b.half.X && local.Y <= b.half.Y && local.Z <= b.half.Z;
+        })), "COL_ boxes do not cover the model; adjust their bounds in the GLB");
+    }
 
     static RuntimeMaterial ReadMaterial(Material? material)
     {

@@ -5,13 +5,21 @@ namespace RouterLoot.Assets;
 
 public sealed class RuntimeModel
 {
-    public int version { get; set; } = 1;
+    public int version { get; set; } = 2;
     public string id { get; set; } = "";
     public float[] size { get; set; } = [];
     public List<RuntimeMaterial> materials { get; set; } = [];
     public List<RuntimePart> parts { get; set; } = [];
+    public List<ImportedCollider> colliders { get; set; } = [];
 
     public IEnumerable<Vector3> Points => parts.SelectMany(p => p.positions.Chunk(3).Select(v => new Vector3(v[0], v[1], v[2])));
+}
+
+public sealed class ImportedCollider
+{
+    public float[] center { get; set; } = [];
+    public float[] size { get; set; } = [];
+    public float[] rotation { get; set; } = [0, 0, 0, 1];
 }
 
 public sealed class RuntimeMaterial
