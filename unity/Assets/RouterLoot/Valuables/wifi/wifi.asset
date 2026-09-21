@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 1521619359, guid: 11f81cc9f413caa4ea4c5233ac8a6e80, type: 3}
+  m_Name: wifi
+  m_EditorClassIdentifier: 
+  _prefab: {fileID: 6613444564747340842, guid: c866d424d56015f4a8314d4417c95b35, type: 3}
+  _valuablePresets:
+  - Valuables - Generic

@@ -8,77 +8,35 @@
 
 Зависимости: BepInEx 5 и REPOLib 4.2.0.
 
-Импортируйте `RouterLoot-*.zip` в менеджер модов или скопируйте `RouterLoot.dll` в `BepInEx/plugins` профиля.
+Импортируйте `RouterLoot-*.zip` в менеджер модов или скопируйте `RouterLoot.dll` и `routerloot.repobundle` в одну папку внутри `BepInEx/plugins`.
 
 ## Настройки
 
-Конфиг: `BepInEx/config/romanvht.RouterLoot.cfg`, создаётся при первом запуске.
-В разделе каждой модели можно изменить базовую стоимость (`ValueMin`, `ValueMax`),
-массу (`Mass`) и хрупкость (`Fragility`, от 0 до 100).
+Конфиг: `BepInEx/config/romanvht.RouterLoot.cfg`.
+В разделе каждого предмета доступны `ValueMin`, `ValueMax`, `Mass` и `Fragility` (0–100).
 
-По умолчанию цены и масса берутся из `assets/catalog.json`, хрупкость - 55.
+`Debug → EnableSpawnKey`: **F8** создаёт набор роутеров перед хостом во время уровня.
 
-Для тестового спавна включите `Debug → EnableSpawnKey`: **F8** создаст набор роутеров перед хостом во время уровня.
+## Разработка
 
-## Добавление своей модели
+Unity **2022.3.62f3**, .NET SDK 9, PowerShell 7, Git, установленная R.E.P.O. и профиль с зависимостями мода.
 
-Положите модель в `assets/models` (например, `my_router.glb`), пересоберите мод и установите его.
-Формат - статический GLB 2.0 со встроенными текстурами.
+Подготовка проекта:
 
-В имени файла допустимы латинские буквы, цифры, `_` и `-`. Имена должны быть уникальными без учёта регистра.
+```powershell
+.\scripts\setup-unity.ps1 -GameDir 'D:\SteamLibrary\steamapps\common\REPO' -ProfileDir 'C:\path\to\profile'
+```
 
-При сборке модель добавляется в каталог: название из имени файла, стоимость 500–1000, масса 1, ширина 0.42 м.
-Импортёр сохраняет пропорции, центрирует модель по горизонтали и ставит её нижнюю точку на землю.
-Замена GLB сохраняет настройки в каталоге; удаление файла убирает запись при следующем импорте.
-
-## Настройки моделей
-
-Настройки моделей находятся в `assets/catalog.json`:
-
-| Поле | Назначение |
-| --- | --- |
-| `id` | Имя GLB без расширения |
-| `name` | Название предмета |
-| `min`, `max` | Начальная стоимость |
-| `mass` | Начальная масса |
-| `width` | Ширина модели в метрах; по умолчанию 0.42 |
-
-## Коллайдеры
-
-В редакторе добавьте кубы для коллайдеров, назовите их `COL_*`.
-
-Каждый объект `COL_*` задаёт коробку по границам своего меша в локальных осях.
-Коллайдеры должны покрывать всю геометрию. Центр масс расположен в центре самой объёмной коробки.
-
-Если объектов `COL_*` нет, импортёр создаёт одну коробку по габаритам модели.
+Откройте `unity` в Unity Hub.
 
 ## Сборка
 
-Нужны .NET SDK 9, PowerShell, установленная игра и профиль с BepInEx и REPOLib.
-SharpGLTF для импорта моделей загружается через NuGet.
+В Unity: `Router Loot → Build Mod`. Собирает DLL, AssetBundle и ZIP; результат открывается в проводнике, лог доступен в Console.
 
-Из папки проекта:
+Из консоли: `.\scripts\build-unity.ps1 -UseLocalDependencies`
 
-```powershell
-.\scripts\build.ps1 `
-    -GameDir 'D:\SteamLibrary\steamapps\common\REPO' `
-    -ProfileDir 'C:\path\to\profile'
-```
+Результат: `dist/RouterLoot.dll`, `dist/routerloot.repobundle`, `dist/RouterLoot-*.zip`.
 
-Результат - `dist/RouterLoot.dll` и `dist/RouterLoot-*.zip`.
-При повторной сборке можно заменить `-ProfileDir` на `-UseLocalDependencies`, чтобы использовать библиотеки из `.deps`.
-`-NoPackage` пропускает создание ZIP.
+`-GameDir`, `-ProfileDir` и `-UnityEditor` задают пути, `-NoPackage` пропускает ZIP.
 
-Только импорт моделей:
-
-```powershell
-dotnet run --project asset-tool/AssetTool.csproj -- assets obj/manual/runtime-assets
-```
-
-## Проверки
-
-```powershell
-dotnet run --project tests/AssetChecks.csproj
-```
-
-Тесты геометрии, материалов, каталога, коллайдеров и импорта моделей.
+`Router Loot → Build Assets` в Unity собирает и проверяет AssetBundle в `obj/unity-bundle`.

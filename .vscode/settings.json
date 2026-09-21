@@ -1,0 +1,7 @@
+{
+  "dotnet.defaultSolution": "RouterLoot.slnx",
+  "files.exclude": {
+    "**/Library": true,
+    "**/Temp": true
+  }
+}

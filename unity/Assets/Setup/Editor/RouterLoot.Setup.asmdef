@@ -1,0 +1,5 @@
+{
+  "name": "RouterLoot.Setup",
+  "references": ["com.nomnom.unity-project-patcher.Editor", "com.nomnom.unity-project-patcher.Runtime", "UniTask"],
+  "includePlatforms": ["Editor"]
+}

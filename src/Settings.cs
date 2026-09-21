@@ -1,24 +1,30 @@
 using BepInEx.Configuration;
 using RouterLoot.Helpers;
+using UnityEngine;
 
 namespace RouterLoot;
 
-internal sealed class Settings
+internal static class Settings
 {
-    public ConfigEntry<float> Min { get; }
-    public ConfigEntry<float> Max { get; }
-    public ConfigEntry<float> Mass { get; }
-    public ConfigEntry<float> Fragility { get; }
-
-    public Settings(ConfigFile config, RouterSpec spec)
+    public static void Apply(ConfigFile config, string id, ValuableObject prefab)
     {
-        Min = ConfigValues.Bind(config, spec.id, "ValueMin", spec.min, 1, 100000,
-            "Minimum base value. Host determines value; game multipliers apply.");
-        Max = ConfigValues.Bind(config, spec.id, "ValueMax", spec.max, 1, 100000,
-            "Maximum base value. Restart after changes.");
-        Mass = ConfigValues.Bind(config, spec.id, "Mass", spec.mass, 0.1f, 30,
-            "Mass. Use the same settings on all clients.");
-        Fragility = ConfigValues.Bind(config, spec.id, "Fragility", 55f, 0, 100,
-            "Impact fragility, 0–100. Use the same settings on all clients.");
+        var value = Object.Instantiate(prefab.valuePreset);
+        var physics = Object.Instantiate(prefab.physAttributePreset);
+        var durability = Object.Instantiate(prefab.durabilityPreset);
+
+        value.valueMin = ConfigValues.Bind(config, id, "ValueMin", value.valueMin, 1, 100000,
+            "Minimum base value. Host determines value; game multipliers apply.").Value;
+        value.valueMax = Mathf.Max(value.valueMin, ConfigValues.Bind(config, id, "ValueMax", value.valueMax, 1, 100000,
+            "Maximum base value. Restart after changes.").Value);
+        physics.mass = ConfigValues.Bind(config, id, "Mass", physics.mass, 0.1f, 30,
+            "Mass. Use the same settings on all clients.").Value;
+        durability.fragility = ConfigValues.Bind(config, id, "Fragility", durability.fragility, 0, 100,
+            "Impact fragility, 0–100. Use the same settings on all clients.").Value;
+
+        prefab.valuePreset = value;
+        prefab.physAttributePreset = physics;
+        prefab.durabilityPreset = durability;
+        prefab.GetComponent<Rigidbody>().mass = physics.mass;
+        prefab.GetComponent<PhysGrabObject>().massOriginal = physics.mass;
     }
 }

@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 1521619359, guid: 11f81cc9f413caa4ea4c5233ac8a6e80, type: 3}
+  m_Name: tplink
+  m_EditorClassIdentifier: 
+  _prefab: {fileID: 7703024963623009088, guid: e24ba61deadc0f44a999cbf40017461b, type: 3}
+  _valuablePresets:
+  - Valuables - Generic
